@@ -8,11 +8,9 @@ let matches = books // why not use the imported books object directly ?
 /* a method that creates a new empty DocumentFragment object, which can be used as a temporary container to hold
  multiple DOM nodes before appending them to the document*/
 
-const starting = document.createDocumentFragment() 
+const starting = document.createDocumentFragment()  //----------
 
-for (const { author, id, image, title } of matches.slice(0, BOOKS_PER_PAGE)) { 
-
-    /*The document.createElement() method is used to dynamically create a new element node in the DOM (Document Object Model).
+/*The document.createElement() method is used to dynamically create a new element node in the DOM (Document Object Model).
      It takes a string parameter representing the HTML tag name of the element you want to create. In this case, 'button' is
       passed as the parameter, indicating that a new <button> element should be created */
 
@@ -22,9 +20,15 @@ for (const { author, id, image, title } of matches.slice(0, BOOKS_PER_PAGE)) {
 
     /* The setAttribute() method is a JavaScript DOM method used to set the value of an attribute on an element. It takes two
      parameters: the name of the attribute and the value to be assigned to that attribute. */
+ 
 
-    
+const defaultBooks = matches.slice(0, BOOKS_PER_PAGE)
 
+
+const createBookElement = (bookArray,fragment) => {
+   
+    const {author, id, image ,title } = bookArray
+  
     const element = document.createElement('button')
     element.classList= 'preview'
     element.setAttribute('data-preview', id)
@@ -39,44 +43,66 @@ for (const { author, id, image, title } of matches.slice(0, BOOKS_PER_PAGE)) {
             <h3 class="preview__title">${title}</h3>
             <div class="preview__author">${authors[author]}</div>
         </div>
-    `
-
-    starting.appendChild(element)
+    ` 
+    fragment.appendChild(element) 
 }
+
+ for (const book of defaultBooks) {
+    createBookElement(book ,starting)
+ } 
+
 
 document.querySelector('[data-list-items]').appendChild(starting)
 
-const genreHtml = document.createDocumentFragment() // abstract this process by making a function that creates document fragments then  calling it multiple times
-const firstGenreElement = document.createElement('option')
-firstGenreElement.value = 'any'
-firstGenreElement.innerText = 'All Genres'
-genreHtml.appendChild(firstGenreElement)
 
-for (const [id, name] of Object.entries(genres)) {
-    const element = document.createElement('option')
-    element.value = id
-    element.innerText = name // name of genre is also innerText in  select option 
-    genreHtml.appendChild(element)
+/**
+ * funtion that creates default select option for select menue
+ * @param {DocumentFragment} fragmentName 
+ * @param {string} elementName 
+ * @param {string} innerText 
+ */
+
+const createDefaultOption = (fragment, elementName, innerText) => {
+    const optionElement = document.createElement('option');
+    optionElement.value = 'any';
+    optionElement.innerText = innerText;
+    elementName = optionElement 
+    fragment.appendChild(elementName);
+  };
+  
+  const genreHtml = document.createDocumentFragment();
+  createDefaultOption(genreHtml, 'firstGenreElement', 'All Genres');
+  
+
+/**
+ * A function that creates a selection menu from entries in an Object
+ * @param {Object} listName 
+ * @param {DocumentFragment} fragment 
+ */
+const createSelectOptions = (listName,fragment) => {
+    for (const [id , name] of Object.entries(listName)){
+        const element = document.createElement('option')
+        element.value = id
+        element.innerText = name
+        fragment.appendChild(element) 
+    }
 }
+
+createSelectOptions (genres , genreHtml)
 
 document.querySelector('[data-search-genres]').appendChild(genreHtml)
 
-const authorsHtml = document.createDocumentFragment()
-const firstAuthorElement = document.createElement('option')
-firstAuthorElement.value = 'any'
-firstAuthorElement.innerText = 'All Authors'
-authorsHtml.appendChild(firstAuthorElement)
 
-for (const [id, name] of Object.entries(authors)) {
-    const element = document.createElement('option')
-    element.value = id
-    element.innerText = name
-    authorsHtml.appendChild(element)
-}
+
+const authorsHtml = document.createDocumentFragment()
+
+createDefaultOption(authorsHtml,'firstAuthorsElement', 'All Authors')
+
+createSelectOptions( authors , authorsHtml)
 
 document.querySelector('[data-search-authors]').appendChild(authorsHtml)
 
-/* */
+
 
 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     document.querySelector('[data-settings-theme]').value = 'night'
@@ -96,26 +122,51 @@ document.querySelector('[data-list-button]').innerHTML = `
     <span class="list__remaining"> (${(matches.length - (page * BOOKS_PER_PAGE)) > 0 ? (matches.length - (page * BOOKS_PER_PAGE)) : 0})</span>
 `
 
-document.querySelector('[data-search-cancel]').addEventListener('click', () => {
-    document.querySelector('[data-search-overlay]').open = false
-})
+const cancelSearchSelector = '[data-search-cancel]' 
+const searchOverlaySelector = '[data-search-overlay]'
+const cancelSettingsSelector = '[data-settings-cancel]'
+const settingsOverlaySelector = '[data-settings-overlay]'
+const activePreviewOverlaySelector = '[data-list-active]'
+const closePreviewSelector = '[data-list-close]'
+const settingsButtonSelector = '[data-header-settings]'
 
-document.querySelector('[data-settings-cancel]').addEventListener('click', () => {
-    document.querySelector('[data-settings-overlay]').open = false
-})
+/**
+ * A funtion that closes an overlay element bases on a click event. Arguments: propmtSelector refers to the data-attribute found 
+ * on the element on which we listen for the click event. overlaySelector refers to  the data-attribute on the overlay we want
+ * to close.
+ * @param {string} promptSelector 
+ * @param {string} overlaySelector 
+ */
+
+const closeOverlay = (promptSelector , overlaySelector) =>{
+    document.querySelector(promptSelector).addEventListener('click', () => {
+        document.querySelector(overlaySelector).open = false
+    })
+}
+
+/**
+ * Similar to closeOveraly function except it opens overlays 
+ * @param {string} promptSelector 
+ * @param {string} overlaySelector 
+ */
+const openOverlay = (promptSelector , overlaySelector) =>{
+    document.querySelector(promptSelector).addEventListener('click', () => {
+        document.querySelector(overlaySelector).open = true
+    })
+}
+
+
+closeOverlay(cancelSearchSelector , searchOverlaySelector)
+closeOverlay(cancelSettingsSelector,settingsOverlaySelector)
+openOverlay(settingsButtonSelector,settingsOverlaySelector)
+closeOverlay(closePreviewSelector,activePreviewOverlaySelector)
+
 
 document.querySelector('[data-header-search]').addEventListener('click', () => {
     document.querySelector('[data-search-overlay]').open = true 
     document.querySelector('[data-search-title]').focus()
 })
 
-document.querySelector('[data-header-settings]').addEventListener('click', () => {
-    document.querySelector('[data-settings-overlay]').open = true 
-})
-
-document.querySelector('[data-list-close]').addEventListener('click', () => {
-    document.querySelector('[data-list-active]').open = false
-})
 
 /*When form is submitted
  a) default behaviour i.e page reload is prevented
@@ -141,7 +192,7 @@ document.querySelector('[data-settings-form]').addEventListener('submit', (event
 })
 
 /* When the filters form is submitted (event listener listens for the event)
-a) default form submit behaviour is prevented , ie. page reload
+a) default form submit behaviour is prevented , ie. page reload                  
 b) formData is a means to capture/retrieve data after submitting a form 
 c) filters and object containg  captured form fields (filters) as object entries is created 
 d) an empty results array is created to store filtered books
@@ -192,7 +243,16 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
     page = 1;
     matches = result
 
-    ///////////////////////////////////////////////////////////////////////////////
+    const newItems = document.createDocumentFragment()
+
+    const filteredBooksPageOne = matches.slice(0, BOOKS_PER_PAGE)
+
+    for (const book of filteredBooksPageOne){
+       createBookElement(book, newItems);
+    }
+    
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     if (result.length < 1) {
         document.querySelector('[data-list-message]').classList.add('list__message_show')
@@ -200,44 +260,10 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
         document.querySelector('[data-list-message]').classList.remove('list__message_show')
     }
 
-    //////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     document.querySelector('[data-list-items]').innerHTML = ''
-    const newItems = document.createDocumentFragment()
-
-    /* After  assigning the innerHTML of the main content to an empty string  and creating an hmtl fragment 
-    a) Loop through each filtered book in the results array up to book 36
-    b) Destructure relavant properties in the book object 
-    c) Now each filtered book is represented by an object that contains the author , id, image, and title 
-    d) for each  filtered book create a button element , assign the class 'preview to that button and set the value 
-    of the data- preview attribute to its id
-    e) Now using the properties from the destructured object, assign the inner html (content) in the button element to
-     an image element that sources the image from ${image} , a header element containg ${title} and div element containing
-     ${author} from the authors object
-    f) Now that you have all the contents of the button for up to 36 books per page, go ahead and append the button 
-    elemnts to the document fragment you created in the beginning , this fragment will  later be appendended to a 
-    traditional html element at some point too */
-
-    for (const { author, id, image, title } of result.slice(0, BOOKS_PER_PAGE)) {
-        const element = document.createElement('button')
-        element.classList = 'preview'
-        element.setAttribute('data-preview', id)
-    
-        element.innerHTML = `
-            <img
-                class="preview__image"
-                src="${image}"
-            />
-            
-            <div class="preview__info">
-                <h3 class="preview__title">${title}</h3>
-                <div class="preview__author">${authors[author]}</div>
-            </div>
-        `
-
-        newItems.appendChild(element)
-    }
-
     document.querySelector('[data-list-items]').appendChild(newItems) // append html fragmnet with book buttons to a div nested in main content html 
     document.querySelector('[data-list-button]').disabled = (matches.length - (page * BOOKS_PER_PAGE)) < 1  // show more button, when the difference 
     // between total books (or matches) and books displayed is zero , i.e no more books to be displayed , button is disabled.  
@@ -250,38 +276,28 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
 // do not need a sho more button as there are no additional books dto display.
 
     window.scrollTo({top: 0, behavior: 'smooth'}); // set smooth scrolling behaviour to top. 
-    document.querySelector('[data-search-overlay]').open = false
+    document.querySelector('[data-search-overlay]').open = false 
+
 })
 
 
-
+const showMorefragment = document.createDocumentFragment()
 
 document.querySelector('[data-list-button]').addEventListener('click', () => {
-    const fragment = document.createDocumentFragment()
-
-    for (const { author, id, image, title } of matches.slice(page * BOOKS_PER_PAGE, (page + 1) * BOOKS_PER_PAGE)) {
-        const element = document.createElement('button')
-        element.classList = 'preview'
-        element.setAttribute('data-preview', id)
     
-        element.innerHTML = `
-            <img
-                class="preview__image"
-                src="${image}"
-            />
-            
-            <div class="preview__info">
-                <h3 class="preview__title">${title}</h3>
-                <div class="preview__author">${authors[author]}</div>
-            </div>7y
-        `
+    showMoreBooks = matches.slice(page * BOOKS_PER_PAGE, (page + 1) * BOOKS_PER_PAGE)
 
-        fragment.appendChild(element)
-    }
+    for (const book of showMoreBooks){
+        createBookElement(book,showMorefragment)
+    }  
+   
+    
 
-    document.querySelector('[data-list-items]').appendChild(fragment)
     page += 1
 })
+
+document.querySelector('[data-list-items]').appendChild(showMorefragment)
+
 
 document.querySelector('[data-list-items]').addEventListener('click', (event) => {
     const pathArray = Array.from(event.path || event.composedPath())
@@ -323,3 +339,4 @@ document.querySelector('[data-list-items]').addEventListener('click', (event) =>
         document.querySelector('[data-list-description]').innerText = active.description
     }
 })
+
